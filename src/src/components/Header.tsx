@@ -8,7 +8,7 @@ export function Header() {
         <div className="header-content">
           <div className="header-left">
             <div>
-              <h1 className="header-title">cGOLD Vault</h1>
+              <h1 className="header-title">RWA Gold</h1>
               <p className="header-caption">Fully encrypted gold custody powered by Zama FHE</p>
             </div>
           </div>
