@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Contract } from 'ethers';
+import { Contract, hexlify } from 'ethers';
 import { useAccount, useReadContract } from 'wagmi';
 
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../config/contracts';
@@ -83,6 +83,14 @@ export function ConfidentialGoldApp() {
     return undefined;
   }, [encryptedBalance]);
 
+  function toHex(data: string | Uint8Array) {
+    if (typeof data === 'string') {
+      return data.startsWith('0x') ? data : `0x${data}`;
+    }
+
+    return hexlify(data);
+  }
+
   async function encryptAmount(value: bigint) {
     if (!instance) {
       throw new Error('Encryption service is unavailable.');
@@ -97,13 +105,13 @@ export function ConfidentialGoldApp() {
     const encrypted = await buffer.encrypt();
 
     const handle = encrypted?.handles?.[0];
-    if (typeof handle !== 'string') {
+    if (!handle) {
       throw new Error('Failed to encrypt amount.');
     }
 
     return {
-      handle,
-      proof: encrypted.inputProof as string,
+      handle: toHex(handle),
+      proof: toHex(encrypted.inputProof as Uint8Array),
     };
   }
 
