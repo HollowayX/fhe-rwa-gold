@@ -346,7 +346,7 @@ export function ConfidentialGoldApp() {
               value={mintAmount}
               onChange={(event) => setMintAmount(event.target.value)}
               inputMode="numeric"
-              pattern="\\d*"
+              pattern="[0-9]*"
               disabled={!isConnected || mintStatus === 'pending' || zamaLoading || !instance}
             />
             <button
@@ -378,7 +378,7 @@ export function ConfidentialGoldApp() {
               value={burnAmount}
               onChange={(event) => setBurnAmount(event.target.value)}
               inputMode="numeric"
-              pattern="\\d*"
+              pattern="[0-9]*"
               disabled={!isConnected || burnStatus === 'pending' || zamaLoading || !instance}
             />
             <button
