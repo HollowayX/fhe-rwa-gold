@@ -32,10 +32,19 @@ describe("ConfidentialGOLD", function () {
     const deployment = await deployments.get("ConfidentialGOLD");
     const contract = await ethers.getContractAt("ConfidentialGOLD", deployment.address);
 
-    const amount = 25;
-    await contract.connect(deployer).mint(user.address, amount);
+    const amount = 25n;
+    const encrypted = await hre.fhevm.encryptUint(
+      FhevmType.euint64,
+      amount,
+      deployment.address,
+      deployer.address,
+    );
+
+    await contract
+      .connect(deployer)
+      .mint(user.address, encrypted.externalEuint, encrypted.inputProof);
     const decrypted = await getDecryptedBalance(user.address);
-    expect(decrypted).to.equal(BigInt(amount));
+    expect(decrypted).to.equal(amount);
   });
 
   it("burns cGOLD from a user", async function () {
@@ -43,13 +52,31 @@ describe("ConfidentialGOLD", function () {
     const deployment = await deployments.get("ConfidentialGOLD");
     const contract = await ethers.getContractAt("ConfidentialGOLD", deployment.address);
 
-    const minted = 40;
-    const burned = 15;
+    const minted = 40n;
+    const burnAmount = 15n;
 
-    const mintTx = await contract.connect(deployer).mint(user.address, minted);
+    const encryptedMint = await hre.fhevm.encryptUint(
+      FhevmType.euint64,
+      minted,
+      deployment.address,
+      deployer.address,
+    );
+
+    const mintTx = await contract
+      .connect(deployer)
+      .mint(user.address, encryptedMint.externalEuint, encryptedMint.inputProof);
     await mintTx.wait();
 
-    const burnTx = await contract.connect(user).burn(user.address, burned);
+    const encryptedBurn = await hre.fhevm.encryptUint(
+      FhevmType.euint64,
+      burnAmount,
+      deployment.address,
+      user.address,
+    );
+
+    const burnTx = await contract
+      .connect(user)
+      .burn(user.address, encryptedBurn.externalEuint, encryptedBurn.inputProof);
     const burnReceipt = await burnTx.wait();
     expect(burnReceipt?.status).to.equal(1n);
 

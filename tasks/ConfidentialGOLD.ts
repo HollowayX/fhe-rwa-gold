@@ -12,18 +12,29 @@ task("cgold:mint", "Mints cGOLD for a recipient")
   .addParam("to", "Recipient address")
   .addParam("amount", "Amount of cGOLD to mint (uint64 grams)")
   .setAction(async function (taskArguments: TaskArguments, hre) {
-    const { ethers, deployments } = hre;
+    const { ethers, deployments, fhevm } = hre;
     const { to, amount } = taskArguments;
     const parsedAmount = BigInt(amount);
     if (parsedAmount < 0n || parsedAmount > 2n ** 64n - 1n) {
       throw new Error("Amount must fit into uint64");
     }
 
+    await fhevm.initializeCLIApi();
+
     const deployment = await deployments.get("ConfidentialGOLD");
     const signer = (await ethers.getSigners())[0];
     const contract = await ethers.getContractAt("ConfidentialGOLD", deployment.address);
 
-    const tx = await contract.connect(signer).mint(to, Number(parsedAmount));
+    const encrypted = await fhevm.encryptUint(
+      FhevmType.euint64,
+      parsedAmount,
+      deployment.address,
+      signer.address,
+    );
+
+    const tx = await contract
+      .connect(signer)
+      .mint(to, encrypted.externalEuint, encrypted.inputProof);
     console.log(`Mint tx: ${tx.hash}`);
     const receipt = await tx.wait();
     console.log(`Mint confirmed with status ${receipt?.status}`);
@@ -33,18 +44,29 @@ task("cgold:burn", "Burns cGOLD from a holder")
   .addParam("from", "Holder address")
   .addParam("amount", "Amount of cGOLD to burn (uint64 grams)")
   .setAction(async function (taskArguments: TaskArguments, hre) {
-    const { ethers, deployments } = hre;
+    const { ethers, deployments, fhevm } = hre;
     const { from, amount } = taskArguments;
     const parsedAmount = BigInt(amount);
     if (parsedAmount < 0n || parsedAmount > 2n ** 64n - 1n) {
       throw new Error("Amount must fit into uint64");
     }
 
+    await fhevm.initializeCLIApi();
+
     const deployment = await deployments.get("ConfidentialGOLD");
     const signer = (await ethers.getSigners())[0];
     const contract = await ethers.getContractAt("ConfidentialGOLD", deployment.address);
 
-    const tx = await contract.connect(signer).burn(from, Number(parsedAmount));
+    const encrypted = await fhevm.encryptUint(
+      FhevmType.euint64,
+      parsedAmount,
+      deployment.address,
+      signer.address,
+    );
+
+    const tx = await contract
+      .connect(signer)
+      .burn(from, encrypted.externalEuint, encrypted.inputProof);
     console.log(`Burn tx: ${tx.hash}`);
     const receipt = await tx.wait();
     console.log(`Burn confirmed with status ${receipt?.status}`);
