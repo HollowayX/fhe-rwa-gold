@@ -83,6 +83,30 @@ export function ConfidentialGoldApp() {
     return undefined;
   }, [encryptedBalance]);
 
+  async function encryptAmount(value: bigint) {
+    if (!instance) {
+      throw new Error('Encryption service is unavailable.');
+    }
+
+    if (!address) {
+      throw new Error('Connect a wallet to encrypt values.');
+    }
+
+    const buffer = instance.createEncryptedInput(CONTRACT_ADDRESS, address);
+    buffer.add64(value);
+    const encrypted = await buffer.encrypt();
+
+    const handle = encrypted?.handles?.[0];
+    if (typeof handle !== 'string') {
+      throw new Error('Failed to encrypt amount.');
+    }
+
+    return {
+      handle,
+      proof: encrypted.inputProof as string,
+    };
+  }
+
   async function handleMint(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMintStatus('idle');
@@ -114,16 +138,24 @@ export function ConfidentialGoldApp() {
       return;
     }
 
+    if (!instance) {
+      setMintStatus('error');
+      setMintMessage('Encryption service is not ready. Please try again shortly.');
+      return;
+    }
+
     try {
       setMintStatus('pending');
-      setMintMessage('Submitting mint transaction…');
+      setMintMessage('Encrypting amount…');
       const signer = await signerPromise;
       if (!signer) {
         throw new Error('Signer unavailable.');
       }
 
       const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      const tx = await contract.mint(address, value);
+      const encrypted = await encryptAmount(value);
+      setMintMessage('Submitting mint transaction…');
+      const tx = await contract.mint(address, encrypted.handle, encrypted.proof);
       setMintMessage('Waiting for confirmation…');
       await tx.wait();
 
@@ -172,16 +204,24 @@ export function ConfidentialGoldApp() {
       return;
     }
 
+    if (!instance) {
+      setBurnStatus('error');
+      setBurnMessage('Encryption service is not ready. Please try again shortly.');
+      return;
+    }
+
     try {
       setBurnStatus('pending');
-      setBurnMessage('Submitting redemption transaction…');
+      setBurnMessage('Encrypting amount…');
       const signer = await signerPromise;
       if (!signer) {
         throw new Error('Signer unavailable.');
       }
 
       const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      const tx = await contract.burn(address, value);
+      const encrypted = await encryptAmount(value);
+      setBurnMessage('Submitting redemption transaction…');
+      const tx = await contract.burn(address, encrypted.handle, encrypted.proof);
       setBurnMessage('Waiting for confirmation…');
       await tx.wait();
 
@@ -307,12 +347,12 @@ export function ConfidentialGoldApp() {
               onChange={(event) => setMintAmount(event.target.value)}
               inputMode="numeric"
               pattern="\\d*"
-              disabled={!isConnected || mintStatus === 'pending'}
+              disabled={!isConnected || mintStatus === 'pending' || zamaLoading || !instance}
             />
             <button
               type="submit"
               className="primary-button"
-              disabled={!isConnected || mintStatus === 'pending'}
+              disabled={!isConnected || mintStatus === 'pending' || zamaLoading || !instance}
             >
               {mintStatus === 'pending' ? 'Minting…' : 'Mint cGOLD'}
             </button>
@@ -339,12 +379,12 @@ export function ConfidentialGoldApp() {
               onChange={(event) => setBurnAmount(event.target.value)}
               inputMode="numeric"
               pattern="\\d*"
-              disabled={!isConnected || burnStatus === 'pending'}
+              disabled={!isConnected || burnStatus === 'pending' || zamaLoading || !instance}
             />
             <button
               type="submit"
               className="primary-button"
-              disabled={!isConnected || burnStatus === 'pending'}
+              disabled={!isConnected || burnStatus === 'pending' || zamaLoading || !instance}
             >
               {burnStatus === 'pending' ? 'Redeeming…' : 'Redeem to Gold'}
             </button>

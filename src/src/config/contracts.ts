@@ -1,4 +1,4 @@
-export const CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000';
+export const CONTRACT_ADDRESS = '0xf40576F2B56a5329FA82629Fe4E9B9881992bb4C';
 
 export const CONTRACT_ABI = [
   {
@@ -198,9 +198,14 @@ export const CONTRACT_ABI = [
         "type": "address"
       },
       {
-        "internalType": "uint64",
-        "name": "amount",
-        "type": "uint64"
+        "internalType": "externalEuint64",
+        "name": "encryptedAmount",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "inputProof",
+        "type": "bytes"
       }
     ],
     "name": "burn",
@@ -573,9 +578,14 @@ export const CONTRACT_ABI = [
         "type": "address"
       },
       {
-        "internalType": "uint64",
-        "name": "amount",
-        "type": "uint64"
+        "internalType": "externalEuint64",
+        "name": "encryptedAmount",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "inputProof",
+        "type": "bytes"
       }
     ],
     "name": "mint",
